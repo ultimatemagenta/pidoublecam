@@ -1,54 +1,68 @@
 import os
 import time
 import subprocess
-from state_manager import is_recording
+from threading import Thread
+from state_manager import is_recording, get_event
 from config.recorder_config import BASE_OUTPUT_DIR
 
-SLEEP_INTERVAL = 60  # secondes
-VALID_EXT = ".mjpeg"
+CONVERT_EXT = ".mjpeg"
+OUTPUT_EXT = ".mp4"
+CHECK_INTERVAL = 60  # toutes les 60 sec
+IDLE_REQUIRED_SEC = 15 * 60  # 15 minutes
 
-def convert_mjpeg_to_mp4(mjpeg_path):
-    mp4_path = mjpeg_path.replace(".mjpeg", ".mp4")
-    if os.path.exists(mp4_path):
-        print(f"⏩ Déjà converti : {mp4_path}")
-        return
-    print(f"🎞️ Conversion : {os.path.basename(mjpeg_path)} → .mp4")
+def convert_file(input_path, output_path):
     try:
-        subprocess.run([
-            "ffmpeg",
-            "-y",
-            "-i", mjpeg_path,
-            "-c:v", "libx264",
-            "-preset", "ultrafast",
-            "-crf", "23",
-            mp4_path
-        ], check=True)
-        os.remove(mjpeg_path)
-        print(f"✅ Fichier converti et supprimé : {mjpeg_path}")
+        print(f"🎬 Conversion : {input_path} ➜ {output_path}")
+        proc = subprocess.Popen([
+            "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
+            "-i", input_path,
+            "-c:v", "libx264", "-preset", "ultrafast", output_path
+        ])
+        while proc.poll() is None:
+            if is_recording():
+                print(f"⛔️ Interruption de la conversion de {input_path}")
+                proc.terminate()
+                try:
+                    proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                if os.path.exists(output_path):
+                    os.remove(output_path)
+                return
+            time.sleep(2)
+        if proc.returncode == 0:
+            os.remove(input_path)
+            print(f"✅ Terminé : {output_path}")
+        else:
+            print(f"❌ Erreur : {input_path}")
     except Exception as e:
-        print(f"❌ Erreur conversion {mjpeg_path}: {e}")
+        print(f"❌ Exception pendant la conversion : {e}")
 
 def run():
-    print("🧼 Post-processor actif")
+    print("🧼 Postprocessor en attente de 15 min d’inactivité...")
+    idle_timer = 0
+
     while True:
         if is_recording():
-            time.sleep(SLEEP_INTERVAL)
+            idle_timer = 0
+            time.sleep(CHECK_INTERVAL)
             continue
 
-        for session_dir in os.listdir(BASE_OUTPUT_DIR):
-            full_path = os.path.join(BASE_OUTPUT_DIR, session_dir)
-            if not os.path.isdir(full_path):
-                continue
+        idle_timer += CHECK_INTERVAL
+        if idle_timer < IDLE_REQUIRED_SEC:
+            print(f"⏳ En attente... {idle_timer // 60} min d’inactivité")
+            time.sleep(CHECK_INTERVAL)
+            continue
 
-            mjpegs = [f for f in os.listdir(full_path) if f.endswith(VALID_EXT)]
-            if not mjpegs:
-                continue
-
-            print(f"📂 Session à convertir : {session_dir}")
-            for mjpeg in mjpegs:
-                convert_mjpeg_to_mp4(os.path.join(full_path, mjpeg))
-
-        time.sleep(SLEEP_INTERVAL)
+        # On scanne tous les dossiers de session
+        for root, _, files in os.walk(BASE_OUTPUT_DIR):
+            for f in sorted(files):
+                if f.endswith(CONVERT_EXT):
+                    input_path = os.path.join(root, f)
+                    output_path = os.path.splitext(input_path)[0] + OUTPUT_EXT
+                    if not os.path.exists(output_path):
+                        convert_file(input_path, output_path)
+        time.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
     run()
