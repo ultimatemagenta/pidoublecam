@@ -18,8 +18,10 @@ def start_raw_capture(camera_id, cam_label, output_dir):
         "-t", str(SEGMENT_DURATION_SEC * 1000),
         "--segment", "1",
         "--framerate", str(FRAMERATE),
+        "--mode", "1536:864:10:U",  # <-- ✅ format unpacked lisible
         "-o", filepath
-    ]
+        ]   
+
 
     subprocess.run(cmd)
     print(f"🛑 [{cam_label}] Fin capture rpicam-raw")

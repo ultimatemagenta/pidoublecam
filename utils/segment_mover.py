@@ -8,7 +8,8 @@ CHECK_INTERVAL = 60  # secondes
 FILE_AGE_THRESHOLD = 5  # secondes depuis dernière modification
 
 # Extensions prises en charge : vidéos, audio et images
-EXTENSIONS = [".mjpeg", ".wav", ".png", ".jpg", ".dng"]
+EXTENSIONS = [".mjpeg", ".wav", ".png", ".jpg", ".dng", ".raw"]
+
 
 
 def is_file_ready(path):
@@ -32,7 +33,10 @@ def run():
                 session_name = datetime.now().strftime("session_%Y%m%d_%H%M%S")
 
             dest_dir = os.path.join(BASE_OUTPUT_DIR, session_name)
+            
             os.makedirs(dest_dir, exist_ok=True)
+            os.chmod(dest_dir, 0o775)  # rwxrwxr-x
+
 
             print(f"📦 Déplacement de {len(ready_files)} fichiers vers {dest_dir}")
             for f in ready_files:
@@ -40,9 +44,12 @@ def run():
                 dst = os.path.join(dest_dir, f)
                 try:
                     shutil.move(src, dst)
+                    os.chmod(dst, 0o664)  # ✅ important pour que SMB puisse supprimer depuis le PC
                     print(f"✅ Déplacé : {f}")
                 except Exception as e:
                     print(f"❌ Erreur sur {f} :", e)
+
+
         else:
             print("🕵️ Aucun fichier à déplacer pour le moment.")
 

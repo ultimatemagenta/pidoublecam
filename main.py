@@ -4,6 +4,8 @@ from triggers import mqtt_trigger, gpio_trigger
 from utils import segment_mover,postprocessor
 from config.triggers_config import TRIGGERS
 from config.recorder_config import RECORD_MODE
+
+
 def main():
 
     print("🧠 Lancement complet de PiCam5 Surveillance Suite")
