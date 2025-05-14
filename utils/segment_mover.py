@@ -5,8 +5,11 @@ from datetime import datetime
 from config.recorder_config import TEMP_DIR, BASE_OUTPUT_DIR
 
 CHECK_INTERVAL = 60  # secondes
-FILE_AGE_THRESHOLD = 60  # secondes depuis dernière modification
-EXTENSIONS = [".mjpeg", ".wav"]
+FILE_AGE_THRESHOLD = 5  # secondes depuis dernière modification
+
+# Extensions prises en charge : vidéos, audio et images
+EXTENSIONS = [".mjpeg", ".wav", ".png", ".jpg", ".dng"]
+
 
 def is_file_ready(path):
     try:
@@ -17,7 +20,8 @@ def is_file_ready(path):
 def run():
     print(f"🚚 Démarrage du segment mover (src: {TEMP_DIR})")
     while True:
-        files = [f for f in os.listdir(TEMP_DIR) if os.path.splitext(f)[1] in EXTENSIONS]
+        # Liste les fichiers valides avec une extension ciblée
+        files = [f for f in os.listdir(TEMP_DIR) if os.path.splitext(f)[1].lower() in EXTENSIONS]
         ready_files = [f for f in files if is_file_ready(os.path.join(TEMP_DIR, f))]
 
         if ready_files:
@@ -28,7 +32,6 @@ def run():
                 session_name = datetime.now().strftime("session_%Y%m%d_%H%M%S")
 
             dest_dir = os.path.join(BASE_OUTPUT_DIR, session_name)
-
             os.makedirs(dest_dir, exist_ok=True)
 
             print(f"📦 Déplacement de {len(ready_files)} fichiers vers {dest_dir}")
