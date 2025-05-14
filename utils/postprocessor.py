@@ -6,13 +6,14 @@ import rawpy
 import imageio
 from state_manager import is_recording, get_event
 from config.recorder_config import BASE_OUTPUT_DIR
-
+from utils.postprocessor_raw import convert_all_raw_to_png  # ✅ Import centralisé
 CONVERT_EXT = ".mjpeg"
 DNG_EXT = ".dng"
 PNG_EXT = ".png"
 OUTPUT_EXT = ".mp4"
 CHECK_INTERVAL = 60  # toutes les 60 sec
 IDLE_REQUIRED_SEC = 5 * 60  # 15 minutes
+
 
 def convert_mjpeg_to_mp4(input_path, output_path):
     try:
@@ -71,6 +72,7 @@ def run():
             time.sleep(CHECK_INTERVAL)
             continue
 
+        convert_all_raw_to_png()
         # Parcours des fichiers de toutes les sessions
         for root, _, files in os.walk(BASE_OUTPUT_DIR):
             files.sort()
@@ -82,10 +84,9 @@ def run():
                     if not os.path.exists(output_path):
                         convert_mjpeg_to_mp4(input_path, output_path)
 
-                elif f.endswith(DNG_EXT):
-                    convert_dng_to_png(input_path)
-
         time.sleep(CHECK_INTERVAL)
 
 if __name__ == "__main__":
     run()
+
+

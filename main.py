@@ -1,5 +1,5 @@
 from threading import Thread
-from recorder import mjpeg_recorder, audio_recorder,picture_recorder
+from recorder import mjpeg_recorder, audio_recorder,picture_recorder,raw_recorder
 from triggers import mqtt_trigger, gpio_trigger
 from utils import segment_mover,postprocessor
 from config.triggers_config import TRIGGERS
@@ -18,6 +18,8 @@ def main():
         threads.append(Thread(target=mjpeg_recorder.run, daemon=True))
     elif RECORD_MODE == "pictures":
         threads.append(Thread(target=picture_recorder.run, daemon=True))
+    elif RECORD_MODE == "raw":
+        threads.append(Thread(target=raw_recorder.run, daemon=True))
     for trig in TRIGGERS:
         threads.append(Thread(
             target=gpio_trigger.start_gpio_trigger,

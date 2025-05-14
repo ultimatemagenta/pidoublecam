@@ -7,8 +7,8 @@ FRAMERATE = 30
 SEGMENT_DURATION_SEC = 60
 SESSION_DURATION_SEC = 5 * 60  # 5 minutes par défaut
 #RECORD_MODE = "video"  # ou "pictures"
-RECORD_MODE = "pictures"
-
+#RECORD_MODE = "pictures"
+RECORD_MODE = "raw"
 
 # Chemins d’enregistrement
 BASE_OUTPUT_DIR = "/mnt/ssd/RECORDS"
